@@ -2,7 +2,6 @@
 
 **An agent that fixes cloud incidents through a `detect → diagnose → policy-check → remediate → verify` loop, plus a benchmark that grades it on the final state of the cloud account rather than on what the agent says it did.**
 
-[![ci](https://github.com/RoopanshuSD/cloud-remediation-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/RoopanshuSD/cloud-remediation-agent/actions/workflows/ci.yml)
 
 ```bash
 pip install -e ".[dev]"
@@ -93,7 +92,7 @@ bench/tasks/rh-db-port/
 
 **Grading:** reward = 1 only if *every* check passes. `fixed_*` checks test the symptom; `collateral_*` checks test that nothing unrelated was broken. No LLM judge is involved. Root-cause accuracy compares the agent's declared label (a closed vocabulary in [`causes.py`](remediation/causes.py)) with the planted fault.
 
-**Admission rule:** a task is valid only if the oracle scores 1 and a no-op agent scores 0 (`python -m bench.validate`, enforced in CI and `tests/test_bench.py`).
+**Admission rule:** a task is valid only if the oracle scores 1 and a no-op agent scores 0 (`python -m bench.validate`, enforced in `tests/test_bench.py`).
 
 ## Usage
 
@@ -127,7 +126,7 @@ Agent config strings: `<agent>[+verify][+nopolicy]`, where agent is one of `noop
 ## Roadmap
 
 - [x] Tool layer, policy gate, audit trace, 5-stage controller
-- [x] 7 tasks with hidden verifiers, oracle/no-op admission, ablation runner, CI
+- [x] 7 tasks with hidden verifiers, oracle/no-op admission, ablation runner
 - [x] Claude agent with code-enforced verification; MCP server
 - [ ] Claude agent results (`--runs 3`, effort sweep) with confidence intervals
 - [ ] 20+ tasks, including programmatically generated fault variants
