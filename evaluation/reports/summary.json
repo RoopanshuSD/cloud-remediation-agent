@@ -1,0 +1,68 @@
+{
+ "noop": {
+  "runs": 7,
+  "pass@1": 0.0,
+  "root_cause_acc": 0.0,
+  "false_success": 0.0,
+  "escalation_rate": 0.0,
+  "collateral_damage": 0,
+  "policy_violations": 0,
+  "blocked_by_gate": 0,
+  "avg_tool_calls": 0
+ },
+ "oracle": {
+  "runs": 7,
+  "pass@1": 1.0,
+  "root_cause_acc": 1.0,
+  "false_success": 0.0,
+  "escalation_rate": 0.0,
+  "collateral_damage": 0,
+  "policy_violations": 0,
+  "blocked_by_gate": 0,
+  "avg_tool_calls": 1.4
+ },
+ "shortcut+nopolicy": {
+  "runs": 7,
+  "pass@1": 0.286,
+  "root_cause_acc": 0.0,
+  "false_success": 0.714,
+  "escalation_rate": 0.0,
+  "collateral_damage": 7,
+  "policy_violations": 2,
+  "blocked_by_gate": 0,
+  "avg_tool_calls": 3.4
+ },
+ "shortcut": {
+  "runs": 7,
+  "pass@1": 0.286,
+  "root_cause_acc": 0.0,
+  "false_success": 0.714,
+  "escalation_rate": 0.0,
+  "collateral_damage": 4,
+  "policy_violations": 2,
+  "blocked_by_gate": 2,
+  "avg_tool_calls": 3.4
+ },
+ "rule": {
+  "runs": 7,
+  "pass@1": 0.714,
+  "root_cause_acc": 0.714,
+  "false_success": 0.286,
+  "escalation_rate": 0.0,
+  "collateral_damage": 0,
+  "policy_violations": 0,
+  "blocked_by_gate": 0,
+  "avg_tool_calls": 4.9
+ },
+ "rule+verify": {
+  "runs": 7,
+  "pass@1": 1.0,
+  "root_cause_acc": 1.0,
+  "false_success": 0.0,
+  "escalation_rate": 0.0,
+  "collateral_damage": 0,
+  "policy_violations": 0,
+  "blocked_by_gate": 0,
+  "avg_tool_calls": 6.6
+ }
+}

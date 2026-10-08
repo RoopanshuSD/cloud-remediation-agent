@@ -1,0 +1,1582 @@
+[
+ {
+  "task": "iam-wildcard-ci-bot",
+  "family": "iam",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_no_wildcard_actions": true,
+   "collateral_can_put_artifacts": true,
+   "collateral_can_get_artifacts": true
+  },
+  "fault": "wildcard_iam_policy",
+  "declared_resolved": true,
+  "declared_cause": "wildcard_iam_policy",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 5,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.063,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467370.13,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": [
+      {
+       "bucket": "build-artifacts",
+       "tags": {}
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467370.173,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-cb72cfbdf16dd2106",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467370.174,
+    "stage": "detect",
+    "family": "privilege",
+    "buckets": [
+     "build-artifacts"
+    ],
+    "groups": [],
+    "port": null
+   },
+   {
+    "kind": "tool",
+    "t": 1791467370.178,
+    "tool": "get_user_policies",
+    "args": {
+     "user": "ci-bot"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "user": "ci-bot",
+     "policies": {
+      "ci-access": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": "*",
+         "Resource": "*"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467370.178,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "wildcard_iam_policy",
+      "ci-bot"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467370.178,
+    "stage": "remediate",
+    "cause": "wildcard_iam_policy",
+    "resource": "ci-bot"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467370.179,
+    "tool": "put_user_policy",
+    "args": {
+     "user": "ci-bot",
+     "policy_name": "ci-access",
+     "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+       {
+        "Sid": "LeastPrivilege",
+        "Effect": "Allow",
+        "Action": [
+         "s3:GetObject",
+         "s3:PutObject"
+        ],
+        "Resource": [
+         "arn:aws:s3:::build-artifacts/*"
+        ]
+       }
+      ]
+     }
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467370.182,
+    "tool": "get_user_policies",
+    "args": {
+     "user": "ci-bot"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "user": "ci-bot",
+     "policies": {
+      "ci-access": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Sid": "LeastPrivilege",
+         "Effect": "Allow",
+         "Action": [
+          "s3:GetObject",
+          "s3:PutObject"
+         ],
+         "Resource": [
+          "arn:aws:s3:::build-artifacts/*"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467370.182,
+    "stage": "verify",
+    "cause": "wildcard_iam_policy",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "lifecycle-deleting-prod",
+  "family": "storage",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_no_expiring_rule": true,
+   "collateral_objects_intact": true,
+   "collateral_archive_rule_kept": true
+  },
+  "fault": "lifecycle_expiring_live_data",
+  "declared_resolved": true,
+  "declared_cause": "lifecycle_expiring_live_data",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 6,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.132,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467371.042,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": [
+      {
+       "bucket": "prod-data",
+       "tags": {}
+      },
+      {
+       "bucket": "logs-archive",
+       "tags": {}
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467371.089,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-cdd8332b91b383cfe",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467371.089,
+    "stage": "detect",
+    "family": "data_loss",
+    "buckets": [
+     "prod-data"
+    ],
+    "groups": [],
+    "port": null
+   },
+   {
+    "kind": "tool",
+    "t": 1791467371.111,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "prod-data"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "prod-data",
+     "versioning": "Disabled",
+     "lifecycle_rules": [
+      {
+       "Expiration": {
+        "Days": 1
+       },
+       "ID": "cleanup-tmp",
+       "Filter": {
+        "Prefix": ""
+       },
+       "Status": "Enabled"
+      }
+     ],
+     "default_encryption": null,
+     "object_count": 5
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467371.129,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "prod-data"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "prod-data",
+     "versioning": "Disabled",
+     "lifecycle_rules": [
+      {
+       "Expiration": {
+        "Days": 1
+       },
+       "ID": "cleanup-tmp",
+       "Filter": {
+        "Prefix": ""
+       },
+       "Status": "Enabled"
+      }
+     ],
+     "default_encryption": null,
+     "object_count": 5
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467371.129,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "lifecycle_expiring_live_data",
+      "prod-data"
+     ],
+     [
+      "versioning_suspended",
+      "prod-data"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467371.129,
+    "stage": "remediate",
+    "cause": "lifecycle_expiring_live_data",
+    "resource": "prod-data"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467371.134,
+    "tool": "delete_bucket_lifecycle",
+    "args": {
+     "bucket": "prod-data"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467371.154,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "prod-data"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "prod-data",
+     "versioning": "Disabled",
+     "lifecycle_rules": [],
+     "default_encryption": null,
+     "object_count": 5
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467371.154,
+    "stage": "verify",
+    "cause": "lifecycle_expiring_live_data",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "rh-db-port",
+  "family": "red-herring",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_app_reaches_db_5432": true,
+   "collateral_db_not_world_open": true,
+   "collateral_app_https_kept": true
+  },
+  "fault": "sg_wrong_port",
+  "declared_resolved": true,
+  "declared_cause": "sg_wrong_port",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 9,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.043,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467372.037,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": []
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.042,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-1db309fee17a8b207",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-d4d724cd86ab503f5",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      },
+      {
+       "group": "db-sg",
+       "id": "sg-303bd1c8341868150",
+       "ingress": [
+        {
+         "port": 5433,
+         "source_group": "app-sg"
+        }
+       ]
+      },
+      {
+       "group": "bastion-sg",
+       "id": "sg-5dc5b94d413bba093",
+       "ingress": [
+        {
+         "port": 22,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.042,
+    "stage": "detect",
+    "family": "connectivity",
+    "buckets": [],
+    "groups": [
+     "app-sg",
+     "db-sg"
+    ],
+    "port": 5432
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.046,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-1db309fee17a8b207",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-d4d724cd86ab503f5",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      },
+      {
+       "group": "db-sg",
+       "id": "sg-303bd1c8341868150",
+       "ingress": [
+        {
+         "port": 5433,
+         "source_group": "app-sg"
+        }
+       ]
+      },
+      {
+       "group": "bastion-sg",
+       "id": "sg-5dc5b94d413bba093",
+       "ingress": [
+        {
+         "port": 22,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.049,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-1db309fee17a8b207",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-d4d724cd86ab503f5",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      },
+      {
+       "group": "db-sg",
+       "id": "sg-303bd1c8341868150",
+       "ingress": [
+        {
+         "port": 5433,
+         "source_group": "app-sg"
+        }
+       ]
+      },
+      {
+       "group": "bastion-sg",
+       "id": "sg-5dc5b94d413bba093",
+       "ingress": [
+        {
+         "port": 22,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.049,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "open_ssh_ingress",
+      "bastion-sg"
+     ],
+     [
+      "sg_wrong_port",
+      "db-sg"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.049,
+    "stage": "remediate",
+    "cause": "open_ssh_ingress",
+    "resource": "bastion-sg"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.056,
+    "tool": "revoke_ingress",
+    "args": {
+     "group": "bastion-sg",
+     "port": 22,
+     "cidr": "0.0.0.0/0"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.059,
+    "tool": "check_connectivity",
+    "args": {
+     "source_group": "app-sg",
+     "target_group": "db-sg",
+     "port": 5432
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "reachable": false,
+     "matched_rule": null
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.059,
+    "stage": "verify",
+    "cause": "open_ssh_ingress",
+    "passed": false
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.059,
+    "stage": "remediate",
+    "cause": "sg_wrong_port",
+    "resource": "db-sg"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.066,
+    "tool": "authorize_ingress",
+    "args": {
+     "group": "db-sg",
+     "port": 5432,
+     "source_group": "app-sg"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.072,
+    "tool": "revoke_ingress",
+    "args": {
+     "group": "db-sg",
+     "port": 5433,
+     "source_group": "app-sg"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.076,
+    "tool": "check_connectivity",
+    "args": {
+     "source_group": "app-sg",
+     "target_group": "db-sg",
+     "port": 5432
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "reachable": true,
+     "matched_rule": {
+      "port": 5432,
+      "source_group": "app-sg"
+     }
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.076,
+    "stage": "verify",
+    "cause": "sg_wrong_port",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "rh-upload-denied",
+  "family": "red-herring",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_put_allowed": true,
+   "collateral_tls_statement_kept": true,
+   "collateral_read_grant_kept": true,
+   "collateral_not_public": true
+  },
+  "fault": "bucket_policy_explicit_deny",
+  "declared_resolved": true,
+  "declared_cause": "bucket_policy_explicit_deny",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 8,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.102,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467372.821,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": [
+      {
+       "bucket": "uploads",
+       "tags": {}
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.874,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-842058af141a2dc81",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.874,
+    "stage": "detect",
+    "family": "access_denied",
+    "buckets": [
+     "uploads"
+    ],
+    "groups": [],
+    "port": null
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.891,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "uploads"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "uploads",
+     "versioning": "Disabled",
+     "lifecycle_rules": [],
+     "default_encryption": null,
+     "object_count": 1
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.896,
+    "tool": "get_bucket_policy",
+    "args": {
+     "bucket": "uploads"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "uploads",
+     "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+       {
+        "Sid": "DenyInsecureTransport",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": [
+         "arn:aws:s3:::uploads",
+         "arn:aws:s3:::uploads/*"
+        ],
+        "Condition": {
+         "Bool": {
+          "aws:SecureTransport": "false"
+         }
+        }
+       },
+       {
+        "Sid": "FreezeDuringMigration",
+        "Effect": "Deny",
+        "Principal": {
+         "AWS": "arn:aws:iam::123456789012:role/app-role"
+        },
+        "Action": "s3:PutObject",
+        "Resource": "arn:aws:s3:::uploads/*"
+       },
+       {
+        "Sid": "AppRead",
+        "Effect": "Allow",
+        "Principal": {
+         "AWS": "arn:aws:iam::123456789012:role/app-role"
+        },
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::uploads/*"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.896,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "missing_encryption",
+      "uploads"
+     ],
+     [
+      "bucket_policy_explicit_deny",
+      "uploads"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.896,
+    "stage": "remediate",
+    "cause": "missing_encryption",
+    "resource": "uploads"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.9,
+    "tool": "enable_default_encryption",
+    "args": {
+     "bucket": "uploads"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.904,
+    "tool": "simulate_s3_access",
+    "args": {
+     "principal_arn": "arn:aws:iam::123456789012:role/app-role",
+     "action": "s3:PutObject",
+     "bucket": "uploads"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "allowed": false,
+     "reason": "explicit deny in statement FreezeDuringMigration"
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.904,
+    "stage": "verify",
+    "cause": "missing_encryption",
+    "passed": false
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.904,
+    "stage": "remediate",
+    "cause": "bucket_policy_explicit_deny",
+    "resource": "uploads"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.907,
+    "tool": "put_bucket_policy",
+    "args": {
+     "bucket": "uploads",
+     "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+       {
+        "Sid": "DenyInsecureTransport",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": [
+         "arn:aws:s3:::uploads",
+         "arn:aws:s3:::uploads/*"
+        ],
+        "Condition": {
+         "Bool": {
+          "aws:SecureTransport": "false"
+         }
+        }
+       },
+       {
+        "Sid": "AppRead",
+        "Effect": "Allow",
+        "Principal": {
+         "AWS": "arn:aws:iam::123456789012:role/app-role"
+        },
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::uploads/*"
+       }
+      ]
+     }
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467372.912,
+    "tool": "simulate_s3_access",
+    "args": {
+     "principal_arn": "arn:aws:iam::123456789012:role/app-role",
+     "action": "s3:PutObject",
+     "bucket": "uploads"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "allowed": true,
+     "reason": "no explicit deny"
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467372.912,
+    "stage": "verify",
+    "cause": "bucket_policy_explicit_deny",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "s3-public-exports",
+  "family": "access",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_exports_not_public": true,
+   "collateral_tls_statement_kept": true,
+   "collateral_website_still_public": true,
+   "collateral_objects_intact": true
+  },
+  "fault": "public_bucket_policy",
+  "declared_resolved": true,
+  "declared_cause": "public_bucket_policy",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 7,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.084,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467373.767,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": [
+      {
+       "bucket": "customer-exports",
+       "tags": {
+        "data-class": "confidential"
+       }
+      },
+      {
+       "bucket": "public-website",
+       "tags": {
+        "purpose": "static-site"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.811,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-0e0472aab285d8cc5",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467373.811,
+    "stage": "detect",
+    "family": "exposure",
+    "buckets": [
+     "customer-exports"
+    ],
+    "groups": [],
+    "port": null
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.817,
+    "tool": "get_bucket_policy",
+    "args": {
+     "bucket": "customer-exports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "customer-exports",
+     "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+       {
+        "Sid": "TempShareForVendor",
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::customer-exports/exports/*"
+       },
+       {
+        "Sid": "DenyInsecureTransport",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": [
+         "arn:aws:s3:::customer-exports",
+         "arn:aws:s3:::customer-exports/*"
+        ],
+        "Condition": {
+         "Bool": {
+          "aws:SecureTransport": "false"
+         }
+        }
+       }
+      ]
+     }
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.821,
+    "tool": "check_public_access",
+    "args": {
+     "bucket": "customer-exports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "customer-exports",
+     "public": true,
+     "public_statements": [
+      "TempShareForVendor"
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.824,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-0e0472aab285d8cc5",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467373.824,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "public_bucket_policy",
+      "customer-exports"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467373.824,
+    "stage": "remediate",
+    "cause": "public_bucket_policy",
+    "resource": "customer-exports"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.828,
+    "tool": "put_bucket_policy",
+    "args": {
+     "bucket": "customer-exports",
+     "policy": {
+      "Version": "2012-10-17",
+      "Statement": [
+       {
+        "Sid": "DenyInsecureTransport",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": [
+         "arn:aws:s3:::customer-exports",
+         "arn:aws:s3:::customer-exports/*"
+        ],
+        "Condition": {
+         "Bool": {
+          "aws:SecureTransport": "false"
+         }
+        }
+       }
+      ]
+     }
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467373.832,
+    "tool": "check_public_access",
+    "args": {
+     "bucket": "customer-exports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "customer-exports",
+     "public": false,
+     "public_statements": []
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467373.832,
+    "stage": "verify",
+    "cause": "public_bucket_policy",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "sg-open-ssh",
+  "family": "network",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_no_world_ssh": true,
+   "collateral_https_still_public": true
+  },
+  "fault": "open_ssh_ingress",
+  "declared_resolved": true,
+  "declared_cause": "open_ssh_ingress",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 5,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.021,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467374.543,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": []
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467374.548,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-747373c022c3224d4",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-3d99d25eb7dcfa217",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        },
+        {
+         "port": 22,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467374.548,
+    "stage": "detect",
+    "family": "exposure",
+    "buckets": [],
+    "groups": [
+     "app-sg"
+    ],
+    "port": 22
+   },
+   {
+    "kind": "tool",
+    "t": 1791467374.551,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-747373c022c3224d4",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-3d99d25eb7dcfa217",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        },
+        {
+         "port": 22,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467374.551,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "open_ssh_ingress",
+      "app-sg"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467374.551,
+    "stage": "remediate",
+    "cause": "open_ssh_ingress",
+    "resource": "app-sg"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467374.556,
+    "tool": "revoke_ingress",
+    "args": {
+     "group": "app-sg",
+     "port": 22,
+     "cidr": "0.0.0.0/0"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467374.559,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-747373c022c3224d4",
+       "ingress": []
+      },
+      {
+       "group": "app-sg",
+       "id": "sg-3d99d25eb7dcfa217",
+       "ingress": [
+        {
+         "port": 443,
+         "cidr": "0.0.0.0/0"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467374.559,
+    "stage": "verify",
+    "cause": "open_ssh_ingress",
+    "passed": true
+   }
+  ]
+ },
+ {
+  "task": "versioning-suspended",
+  "family": "storage",
+  "config": "rule+verify",
+  "reward": 1,
+  "checks": {
+   "fixed_versioning_enabled": true,
+   "collateral_objects_intact": true
+  },
+  "fault": "versioning_suspended",
+  "declared_resolved": true,
+  "declared_cause": "versioning_suspended",
+  "root_cause_correct": true,
+  "escalated": false,
+  "escalation_reason": "",
+  "false_success": false,
+  "collateral_damage": 0,
+  "blocked_by_gate": 0,
+  "policy_violations": 0,
+  "tool_calls": 6,
+  "tokens": {
+   "input": 0,
+   "output": 0
+  },
+  "seconds": 0.119,
+  "trace": [
+   {
+    "kind": "tool",
+    "t": 1791467375.235,
+    "tool": "list_buckets",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "buckets": [
+      {
+       "bucket": "finance-reports",
+       "tags": {}
+      }
+     ]
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467375.28,
+    "tool": "describe_security_groups",
+    "args": {},
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "security_groups": [
+      {
+       "group": "default",
+       "id": "sg-fe93fb12726b6d77d",
+       "ingress": []
+      }
+     ]
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467375.28,
+    "stage": "detect",
+    "family": "data_loss",
+    "buckets": [
+     "finance-reports"
+    ],
+    "groups": [],
+    "port": null
+   },
+   {
+    "kind": "tool",
+    "t": 1791467375.303,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "finance-reports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "finance-reports",
+     "versioning": "Suspended",
+     "lifecycle_rules": [],
+     "default_encryption": null,
+     "object_count": 3
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467375.319,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "finance-reports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "finance-reports",
+     "versioning": "Suspended",
+     "lifecycle_rules": [],
+     "default_encryption": null,
+     "object_count": 3
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467375.319,
+    "stage": "diagnose",
+    "hypotheses": [
+     [
+      "versioning_suspended",
+      "finance-reports"
+     ]
+    ]
+   },
+   {
+    "kind": "stage",
+    "t": 1791467375.319,
+    "stage": "remediate",
+    "cause": "versioning_suspended",
+    "resource": "finance-reports"
+   },
+   {
+    "kind": "tool",
+    "t": 1791467375.323,
+    "tool": "set_bucket_versioning",
+    "args": {
+     "bucket": "finance-reports",
+     "status": "Enabled"
+    },
+    "writes": true,
+    "decision": "allow",
+    "executed": true,
+    "result": {
+     "ok": true
+    }
+   },
+   {
+    "kind": "tool",
+    "t": 1791467375.34,
+    "tool": "get_bucket_config",
+    "args": {
+     "bucket": "finance-reports"
+    },
+    "writes": false,
+    "decision": null,
+    "executed": true,
+    "result": {
+     "bucket": "finance-reports",
+     "versioning": "Enabled",
+     "lifecycle_rules": [],
+     "default_encryption": null,
+     "object_count": 3
+    }
+   },
+   {
+    "kind": "stage",
+    "t": 1791467375.34,
+    "stage": "verify",
+    "cause": "versioning_suspended",
+    "passed": true
+   }
+  ]
+ }
+]
