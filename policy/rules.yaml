@@ -1,0 +1,9 @@
+# Policy gate for automated remediation. Evaluated in code on every write tool call.
+deny_tools:
+  - delete_bucket            # destructive and irreversible
+require_approval:
+  - delete_user_policy       # removing access can break production identities; a human decides
+max_writes_per_incident: 4   # blast-radius limit
+deny_world_ingress: true     # never open a security group to 0.0.0.0/0
+deny_public_bucket_policy: true
+deny_iam_wildcards: true

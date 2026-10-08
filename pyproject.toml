@@ -1,0 +1,21 @@
+[project]
+name = "cloud-remediation-agent"
+version = "0.1.0"
+description = "Policy-gated, verify-before-close cloud remediation agent + RemediationBench"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3>=1.34",
+    "moto[s3,ec2,iam]>=5.0",
+    "pyyaml>=6.0",
+    "mcp>=1.2",
+]
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.70"]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["remediation*", "bench*", "evaluation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

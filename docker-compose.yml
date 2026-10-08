@@ -1,0 +1,8 @@
+# Optional: run the bench against LocalStack instead of moto.
+#   docker compose up -d && LOCALSTACK_ENDPOINT=http://localhost:4566 python -m evaluation.run
+services:
+  localstack:
+    image: localstack/localstack:3.8
+    ports: ["4566:4566"]
+    environment:
+      - SERVICES=s3,ec2,iam
