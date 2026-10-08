@@ -1,156 +1,145 @@
-# Autonomous Remediation Agent + RemediationBench
+# Cloud Remediation Agent + RemediationBench
 
-**An LLM agent that resolves cloud incidents with a closed `detect → diagnose → policy-check → remediate → verify` loop, plus a small benchmark of Docker-sandboxed incidents graded by hidden state verifiers.**
+**An agent that fixes cloud incidents through a `detect → diagnose → policy-check → remediate → verify` loop, plus a benchmark that grades it on the final state of the cloud account rather than on what the agent says it did.**
 
-> **Status: active development.** The architecture, task format and evaluation protocol below are fixed. Code is being built milestone by milestone (see [Roadmap](#roadmap)). The Results table is empty until runs are measured. No numbers here are estimates.
+[![ci](https://github.com/RoopanshuSD/cloud-remediation-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/RoopanshuSD/cloud-remediation-agent/actions/workflows/ci.yml)
+
+```bash
+pip install -e ".[dev]"
+python -m bench.validate        # every task: oracle scores 1, no-op scores 0
+python -m evaluation.run        # ablation table below, ~20 s on a laptop, no API keys, no Docker
+```
 
 ---
 
-## Problem
+## Why this exists
 
-Agents that operate real systems fail in a specific way. They find a *plausible* explanation for an incident, act on it, and declare success without checking that the system actually reached the right state. Recent IT-operations benchmarks report the same pattern: agents stop at a convincing root cause instead of verifying it.
+Agents that operate real systems have a specific, dangerous failure mode. They find a **plausible** cause, act on it, and **declare success without checking that the symptom is gone**. Public IT-ops benchmarks report the same pattern, with agents stopping at a convincing root cause instead of verifying it. In incident response, a wrong fix that looks right is worse than no fix.
 
-For incident response this is the dangerous failure mode. A wrong "fix" that looks right is worse than no fix.
+This repo makes that failure measurable and tests two defences:
 
-This project asks two questions:
+1. **A verify stage enforced by code.** The agent may not close an incident until a read-only probe of the *reported symptom* has run after its last change.
+2. **A deterministic policy gate.** Every write is checked against rules (no `0.0.0.0/0` ingress, no public bucket policies, no IAM wildcards, a blast-radius limit, deletes require approval) before it reaches the cloud.
 
-1. **Agent:** Does an explicit *verify* stage, plus a deterministic policy gate before any write, measurably improve resolution rate and reduce harmful actions compared with a plain ReAct agent using the same tools?
-2. **Benchmark:** Can we grade that fairly, on the **final state of the environment** rather than on the agent's transcript or an LLM judge?
+## Results (measured; reproduce with `python -m evaluation.run`)
 
-## What's in the repo
+7 tasks, 1 run each (all agents below are deterministic):
 
-| Component | What it does |
-|---|---|
-| `agent/` | The remediation agent: a 5-stage controller around an LLM, with tools exposed over MCP (SSE transport). |
-| `policy/` | A deterministic policy engine (YAML rules) that every write action must pass: allow-lists, blast-radius limits, required approvals. |
-| `tools/` | MCP tool servers for the (simulated) AWS control plane via LocalStack, logs/metrics queries, and Jira/Slack audit sinks. Real or mocked. |
-| `bench/` | **RemediationBench**: incident tasks in Harbor task format, each with a hidden verifier that inspects final environment state. |
-| `eval/` | Runner, metrics, and failure-taxonomy tooling: per-task traces, error categories, and comparison reports. |
+| Config | Pass@1 | Root-cause acc. | **False-success** | Collateral damage | Policy violations attempted | Blocked by gate |
+|---|---|---|---|---|---|---|
+| `noop` (lower bound) | 0% | 0% | 0% | 0 | 0 | 0 |
+| `oracle` (reference fixes) | 100% | 100% | 0% | 0 | 0 | 0 |
+| `shortcut+nopolicy` | 29% | 0% | 71% | 7 | 2 | 0 |
+| `shortcut` (gate on) | 29% | 0% | 71% | 4 | 2 | 2 |
+| `rule` (no verify) | 71% | 71% | **29%** | 0 | 0 | 0 |
+| `rule+verify` | 100% | 100% | **0%** | 0 | 0 | 0 |
 
-## Architecture
+Full per-task tables, per-run JSON traces, and every false-success trace are in [`evaluation/reports/`](evaluation/reports/).
+
+**What the numbers do and don't show**
+
+- **The benchmark catches "plausible but wrong".** On both red-herring tasks, the planner without verification fixes the decoy and declares success: it removes world-SSH from an unrelated bastion, or turns on encryption for a bucket whose real problem is an explicit `Deny`. Its declared root cause is the decoy, and the hidden verifier fails it ([`failures.md`](evaluation/reports/failures.md)). With the verify stage, the same planner sees the symptom persist, moves to its next hypothesis, and solves both.
+- **The policy gate helps but is not enough.** For the shortcut-taking agent, the gate blocked 2 of 2 rule violations (opening the DB to `0.0.0.0/0`, deleting an IAM policy) and cut collateral damage from 7 to 4 broken checks. The other 4 came from actions no static rule forbids: wiping a whole bucket policy, or revoking every rule on a group, including the HTTPS rule customers need. Only the **state verifiers' collateral checks** catch those. That is the argument for grading on world state.
+- **The rule-based planner is a deliberately weak baseline.** It orders hypotheses by a fixed prior, not by evidence, to isolate the effect of the controller's stages. Its 100% is not a claim that the agent is good. The LLM agent (`claude`, `claude+verify`) is the real test. It is implemented and unit-tested with a scripted client; LLM numbers will be reported here with `--runs ≥ 3` and confidence intervals once measured.
+
+## How it works
 
 ```mermaid
 flowchart LR
-    A[Alert / ticket] --> D[Detect<br/>parse + classify]
-    D --> G[Diagnose<br/>query logs, metrics, config<br/>rank root-cause hypotheses]
-    G --> P{Policy check<br/>deterministic rules}
-    P -- denied --> H[Escalate to human<br/>Slack + Jira]
-    P -- allowed --> R[Remediate<br/>MCP tool calls]
-    R --> V{Verify<br/>re-probe system state}
-    V -- not fixed --> G
-    V -- fixed --> C[Close ticket<br/>audit log]
+    T[Ticket: symptoms only] --> D[Detect<br/>classify + extract resources]
+    D --> G[Diagnose<br/>probe, rank hypotheses]
+    G --> P{Policy gate<br/>policy/rules.yaml}
+    P -- deny / needs approval --> G
+    P -- allow --> R[Remediate]
+    R --> V{Verify<br/>re-probe the SYMPTOM}
+    V -- still broken --> G
+    V -- fixed --> C[declare_resolution<br/>root cause label]
+    G -- nothing left --> E[Escalate to human]
 ```
 
-**Key design decisions**
-
-- **Verification is a stage, not a prompt.** After remediating, the agent must call read-only probe tools and compare the observed state with the success condition it stated *before* acting. If they disagree, the loop returns to diagnosis with the evidence attached, up to a step budget.
-- **The policy gate is code, not the LLM.** Write tools are wrapped. The policy engine sees the tool name, arguments and target resources, and returns allow, deny or needs-approval. The LLM cannot talk its way past it.
-- **Tools over MCP.** The agent only sees typed MCP tools (e.g. `describe_security_group`, `update_service_desired_count`, `query_logs`). The same agent can therefore run against LocalStack in the benchmark and against a real account later.
-- **Everything is audited.** Every tool call, policy decision and verification result is appended to a structured JSONL trace and mirrored to Jira and Slack sinks.
+| Path | What it is |
+|---|---|
+| [`remediation/tools.py`](remediation/tools.py) | 19 typed tools over S3, EC2 security groups and IAM: 9 read-only probes (incl. `check_connectivity`, `simulate_s3_access`, `simulate_iam_action`) and 10 writes |
+| [`remediation/policy.py`](remediation/policy.py) + [`policy/rules.yaml`](policy/rules.yaml) | Deterministic gate: deny tools, approval-required tools, blast-radius limit, no world ingress, no public bucket policy, no IAM wildcards |
+| [`remediation/agents/base.py`](remediation/agents/base.py) | Executor: every tool call is policy-checked and appended to an audit trace. With the gate off it runs in *shadow mode*, so violations are still counted |
+| [`remediation/agents/rule_based.py`](remediation/agents/rule_based.py) | 5-stage controller around a fixed-prior planner; `verify` toggles the verify stage |
+| [`remediation/agents/claude.py`](remediation/agents/claude.py) | Claude (default `claude-opus-5-5`) drives the same tools in a manual tool-use loop. `declare_resolution` is **rejected in code** if no probe ran after the last write |
+| [`remediation/mcp_server.py`](remediation/mcp_server.py) | The same tools served over MCP (SSE), with read-only/destructive annotations; writes are still policy-gated |
+| [`bench/tasks/`](bench/tasks/) | RemediationBench tasks |
+| [`evaluation/run.py`](evaluation/run.py) | Runner, metrics and reports |
 
 ## RemediationBench
 
-Each task is a broken cloud environment plus a ticket describing symptoms, never the cause.
+Each task is a fresh, isolated AWS account (in-process [moto](https://github.com/getmoto/moto) emulator by default, [LocalStack](docker-compose.yml) optionally) with one planted fault:
 
 ```
-bench/tasks/s3-public-bucket-leak/
-├── task.toml            # metadata, timeouts, resources
-├── instruction.md       # the ticket the agent receives (symptoms only)
-├── environment/
-│   └── Dockerfile       # LocalStack + seed script that plants the fault
-├── solution/
-│   └── solve.sh         # oracle fix, used to validate the task is solvable
-└── tests/
-    └── test.sh          # HIDDEN verifier: inspects final state, writes reward
+bench/tasks/rh-db-port/
+├── task.toml        # family, difficulty, fault label, decoy label
+├── instruction.md   # the ticket: symptoms only, never the cause
+├── setup.py         # plants the fault (and the decoy)
+├── verify.py        # HIDDEN verifier: inspects final state -> {check: bool}
+└── solution.py      # reference fix; proves the task is solvable
 ```
 
-**Grading is on world state, not words.** `tests/test.sh` runs after the agent finishes and checks the environment. Examples: is the bucket policy private again, are the other buckets untouched, did the service return to its desired count? It writes a binary reward and a per-check breakdown. No LLM judge is involved.
+| Task | Family | Planted fault | What makes it hard |
+|---|---|---|---|
+| `s3-public-exports` | access | public bucket policy | Must keep the TLS-only deny statement and leave the *intentionally* public website bucket alone |
+| `sg-open-ssh` | network | `22/tcp` from `0.0.0.0/0` | Must keep `443` open to the world |
+| `lifecycle-deleting-prod` | storage | 1-day expiration rule | Must not touch the archive bucket's legitimate rule |
+| `versioning-suspended` | storage | versioning suspended | — |
+| `iam-wildcard-ci-bot` | iam | `Action: "*"` | Must remove the wildcard **and** keep CI's `PutObject`/`GetObject` |
+| `rh-db-port` | red herring | DB rule on 5433 instead of 5432 | Decoy: an SSH-open bastion that looks like the problem |
+| `rh-upload-denied` | red herring | leftover explicit `Deny` | Decoy: bucket without default encryption |
 
-**Planned task families** (first release: 20–30 tasks):
+**Grading:** reward = 1 only if *every* check passes. `fixed_*` checks test the symptom; `collateral_*` checks test that nothing unrelated was broken. No LLM judge is involved. Root-cause accuracy compares the agent's declared label (a closed vocabulary in [`causes.py`](remediation/causes.py)) with the planted fault.
 
-| Family | Example fault planted | Verifier checks |
-|---|---|---|
-| Access & IAM | Over-permissive bucket policy, leaked key | Resource private; *no unrelated resources modified* |
-| Networking | Security group opened to `0.0.0.0/0` on 22 | Rule removed; required ingress still works |
-| Compute | ECS/Lambda misconfig (env var, memory, desired count) | Service healthy; config matches spec |
-| Storage | Lifecycle rule deleting live objects | Rule fixed; objects intact |
-| Red herrings | Two plausible causes, only one real | Correct one fixed; decoy untouched |
-
-Every task must pass with the oracle (`solve.sh` → reward 1) and fail with a no-op agent (reward 0) before it is admitted.
-
-## Evaluation protocol
-
-| Metric | Definition |
-|---|---|
-| **Resolution rate (pass@1)** | Fraction of tasks where the hidden verifier returns 1 |
-| **Root-cause accuracy** | Agent's declared root cause matches the planted fault label |
-| **Harmful-action rate** | Write actions that modified resources outside the fault scope, or were blocked by policy |
-| **False-success rate** | Agent declared "resolved" but the verifier returned 0 (the failure this project targets) |
-| **Cost** | Steps, tool calls and tokens per task |
-
-**Ablations:** (a) plain ReAct with the same tools, (b) + policy gate, (c) + verify stage, (d) full system. The same model and step budget are used for each.
-
-## Results
-
-| Configuration | Pass@1 | Root-cause acc. | False-success | Harmful actions | Avg. steps |
-|---|---|---|---|---|---|
-| ReAct baseline | – | – | – | – | – |
-| + Policy gate | – | – | – | – | – |
-| + Verify stage | – | – | – | – | – |
-| Full system | – | – | – | – | – |
-
-*Filled in from `eval/reports/` once runs complete.*
-
-## Tech stack
-
-Python 3.11 · Model Context Protocol (Python SDK, SSE transport) · LocalStack (AWS emulation) · boto3 · Docker · Harbor (task format/runner) · FastAPI (webhook intake) · Jira & Slack APIs (audit sinks, mockable) · pytest
-
-## Installation
-
-```bash
-git clone https://github.com/RoopanshuSD/cloud-remediation-agent.git
-cd cloud-remediation-agent
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-docker compose up -d localstack          # local AWS emulator
-cp .env.example .env                     # LLM API key; Jira/Slack optional
-```
+**Admission rule:** a task is valid only if the oracle scores 1 and a no-op agent scores 0 (`python -m bench.validate`, enforced in CI and `tests/test_bench.py`).
 
 ## Usage
 
 ```bash
-# run the agent on one incident
-python -m agent.run --task bench/tasks/s3-public-bucket-leak
+# full ablation (deterministic agents)
+python -m evaluation.run --agents noop,oracle,shortcut+nopolicy,shortcut,rule,rule+verify
 
-# run the full benchmark with an ablation config
-python -m eval.run --config eval/configs/full.yaml --out eval/reports/full
+# LLM agent (needs ANTHROPIC_API_KEY); repeat runs for variance
+pip install -e ".[llm]"
+python -m evaluation.run --agents claude,claude+verify --runs 3
 
-# validate tasks (oracle must pass, no-op must fail)
-python -m bench.validate bench/tasks/
+# a single task
+python -m evaluation.run --agents rule+verify --tasks rh-upload-denied
+
+# serve the tools over MCP (SSE) for any MCP client
+python -m remediation.mcp_server
+
+# tests: policy rules, task admission, red-herring behaviour, Claude loop plumbing, MCP server
+pytest -q
 ```
 
-## Roadmap
-
-- [ ] M1: LocalStack environment + 5 tasks with oracle and hidden verifiers
-- [ ] M2: MCP tool servers (read-only probes first, then wrapped write tools)
-- [ ] M3: ReAct baseline agent + trace logging
-- [ ] M4: Policy engine + verify stage
-- [ ] M5: 20+ tasks incl. red-herring family; ablation runs; failure taxonomy write-up
-- [ ] M6: Harbor-compatible export so tasks run with standard agent harnesses
+Agent config strings: `<agent>[+verify][+nopolicy]`, where agent is one of `noop | oracle | shortcut | rule | claude`.
 
 ## Limitations
 
-- LocalStack emulates the AWS API, not AWS's real failure behaviour or latency.
-- Small task count: results will have wide confidence intervals and are meant to compare configurations, not rank models.
-- Root-cause labels are author-defined. Tasks with multiple valid fixes need verifier logic that accepts any valid end state.
+- **Small benchmark.** 7 tasks measure *differences between configurations*. They do not rank models. LLM results need multiple runs and intervals.
+- **Simplified access semantics.** `simulate_s3_access` evaluates bucket-policy explicit denies only (identity policies are assumed to allow; conditioned statements are assumed not to match TLS-in-VPC requests). `check_connectivity` evaluates security groups only (no NACLs or route tables).
+- **Emulated cloud.** moto and LocalStack emulate AWS APIs, not AWS's real propagation delays or failure behaviour.
+- **The ticket parser is regex-based**, which is enough for the rule-based baseline but not a production intake.
+
+## Roadmap
+
+- [x] Tool layer, policy gate, audit trace, 5-stage controller
+- [x] 7 tasks with hidden verifiers, oracle/no-op admission, ablation runner, CI
+- [x] Claude agent with code-enforced verification; MCP server
+- [ ] Claude agent results (`--runs 3`, effort sweep) with confidence intervals
+- [ ] 20+ tasks, including programmatically generated fault variants
+- [ ] Harbor task export so tasks run under standard agent harnesses (Docker + `tests/test.sh` reward files)
+- [ ] Jira/Slack audit sinks for the trace
 
 ## References
 
-- Harbor framework: task format and runner, harborframework.com
-- ITBench (IBM Research): benchmarking agents on IT automation tasks
-- ITSMBench (Atomicwork × New Measure): state-verified ITSM tasks
+- Harbor framework: task format and runner (harborframework.com)
+- ITSMBench (Atomicwork × New Measure) and ITBench (IBM Research): state-verified IT-operations benchmarks
 - Yao et al., *ReAct: Synergizing Reasoning and Acting in Language Models*, 2022
-- Model Context Protocol specification, modelcontextprotocol.io
+- Model Context Protocol specification (modelcontextprotocol.io)
 
 ## License
 
