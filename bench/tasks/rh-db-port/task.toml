@@ -1,0 +1,6 @@
+name = "rh-db-port"
+family = "red-herring"
+difficulty = "hard"
+fault = "sg_wrong_port"
+decoy = "open_ssh_ingress"
+description = "App-to-DB timeouts caused by a wrong-port rule; an unrelated SSH-open bastion is the plausible decoy."

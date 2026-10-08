@@ -1,0 +1,6 @@
+name = "sg-open-ssh"
+family = "network"
+difficulty = "easy"
+fault = "open_ssh_ingress"
+decoy = ""
+description = "SSH open to the internet on an app security group that also legitimately serves HTTPS to the world."

@@ -1,0 +1,6 @@
+name = "s3-public-exports"
+family = "access"
+difficulty = "easy"
+fault = "public_bucket_policy"
+decoy = ""
+description = "Confidential bucket made world-readable; a legitimately public website bucket exists alongside."

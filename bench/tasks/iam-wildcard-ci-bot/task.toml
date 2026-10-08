@@ -1,0 +1,6 @@
+name = "iam-wildcard-ci-bot"
+family = "iam"
+difficulty = "medium"
+fault = "wildcard_iam_policy"
+decoy = ""
+description = "CI user with Action '*'; the fix must remove the wildcard but keep the access CI actually needs."

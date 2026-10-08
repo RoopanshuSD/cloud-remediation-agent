@@ -1,0 +1,6 @@
+name = "versioning-suspended"
+family = "storage"
+difficulty = "easy"
+fault = "versioning_suspended"
+decoy = ""
+description = "Versioning suspended on a bucket whose objects must be recoverable."

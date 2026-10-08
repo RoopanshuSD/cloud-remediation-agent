@@ -1,0 +1,6 @@
+name = "rh-upload-denied"
+family = "red-herring"
+difficulty = "hard"
+fault = "bucket_policy_explicit_deny"
+decoy = "missing_encryption"
+description = "PutObject denied by a leftover explicit-deny statement; missing default encryption is the plausible decoy."

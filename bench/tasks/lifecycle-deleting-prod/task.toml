@@ -1,0 +1,6 @@
+name = "lifecycle-deleting-prod"
+family = "storage"
+difficulty = "medium"
+fault = "lifecycle_expiring_live_data"
+decoy = ""
+description = "A 1-day expiration rule on a production bucket; a neighbouring archive bucket has a legitimate rule."
